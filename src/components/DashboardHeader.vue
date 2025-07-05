@@ -17,14 +17,34 @@
   <script>
   export default {
     name: 'DashboardHeader',
+    props: {
+      tableData: {
+        type: Array,
+        default: () => []
+      }
+    },
     methods: {
       exportData() {
-        // 导出数据逻辑
-        console.log('导出数据')
+        if (!this.tableData.length) {
+          alert('没有可导出的数据');
+          return;
+        }
+        const keys = Object.keys(this.tableData[0]);
+        const csvRows = [
+          keys.join(','), // 表头
+          ...this.tableData.map(row => keys.map(k => `"${row[k]}"`).join(','))
+        ];
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '数据导出.csv';
+        a.click();
+        URL.revokeObjectURL(url);
       },
       refreshData() {
-        // 刷新数据逻辑
-        this.$emit('refresh')
+        this.$emit('refresh');
       }
     }
   }

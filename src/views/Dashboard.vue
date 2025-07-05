@@ -5,10 +5,10 @@
     
     <!-- 主内容 -->
     <div class="flex-grow-1 p-4 w-100" style="margin: 0; background-color: rgb(235, 243, 248);">
-      <DashboardHeader @refresh="refreshAllData" />
+      <DashboardHeader :tableData="performanceData" @refresh="fetchPerformanceData" />
       <div class="row">
         <div class="col-md-8">
-          <PerformanceChart ref="performanceChart" />
+          <PerformanceChart :chartData="performanceData" />
         </div>
         <div class="col-md-4 ">
           <WarningCounter />
@@ -34,9 +34,29 @@ export default {
     PerformanceChart,
     StatsCards,
     WarningCounter,
-    
+  },
+  data() {
+    return {
+      performanceData: []
+    }
   },
   methods: {
+    async fetchPerformanceData() {
+      this.performanceData = [
+        { month: 'Jan', value: 80 },
+        { month: 'Feb', value: 75 },
+        { month: 'Mar', value: 82 },
+        { month: 'Apr', value: 78 },
+        { month: 'May', value: 85 },
+        { month: 'Jun', value: 90 },
+        { month: 'Jul', value: 88 },
+        { month: 'Aug', value: 92 },
+        { month: 'Sep', value: 95 },
+        { month: 'Oct', value: 89 },
+        { month: 'Nov', value: 91 },
+        { month: 'Dec', value: 96 }
+      ]
+    },
     async refreshAllData() {
       // 刷新所有组件的数据
       if (this.$refs.performanceChart) {
@@ -46,6 +66,9 @@ export default {
         await this.$refs.statsCards.fetchStats()
       }
     }
+  },
+  mounted() {
+    this.fetchPerformanceData()
   }
 }
 </script>

@@ -52,7 +52,7 @@
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-3">
               <div>
-                <h6 class="text-muted mb-2">质量指标</h6>
+                <h6 class="text-muted mb-2">环境温度</h6>
                 <h3 class="text-white mb-0">{{ formatNumber(stats.quality) }}</h3>
               </div>
               <div class="bg-warning bg-opacity-20 p-2 rounded">

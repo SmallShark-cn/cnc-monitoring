@@ -29,7 +29,7 @@
           { icon: 'fas fa-exclamation-triangle', label: '警报历史', route: '/alerts' },
           { icon: 'fas fa-cog', label: '参数调整', route: '/settings' },
           { icon: 'fas fa-clock', label: '维护记录', route: '/maintenance' },
-          { icon: 'fas fa-users', label: '用户管理', route: '/users' }
+          { icon: 'fas fa-users', label: '用户管理', route: '/usermanagement' }
         ]
       }
     },

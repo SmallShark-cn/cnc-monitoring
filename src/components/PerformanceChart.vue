@@ -4,7 +4,7 @@
         <h5 class="text-dark mb-4">Performance</h5>
         <div style="height: 300px;">
           <Line
-            :data="chartData"
+            :data="chartDataObj"
             :options="chartOptions"
           />
         </div>
@@ -40,14 +40,20 @@
     components: {
       Line
     },
-    data() {
-      return {
-        chartData: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    props: {
+      chartData: {
+        type: Array,
+        default: () => []
+      }
+    },
+    computed: {
+      chartDataObj() {
+        return {
+          labels: this.chartData.map(item => item.month),
           datasets: [
             {
               label: 'Performance',
-              data: [80, 75, 85, 78, 90, 88, 92, 95, 89, 93, 96, 94],
+              data: this.chartData.map(item => item.value),
               borderColor: '#10B981',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
               borderWidth: 2,
@@ -55,10 +61,14 @@
               pointBorderColor: '#10B981',
               pointRadius: 4,
               fill: true,
-              tension: 0.4
+              tension: 0.3
             }
           ]
-        },
+        }
+      }
+    },
+    data() {
+      return {
         chartOptions: {
           responsive: true,
           maintainAspectRatio: false,
@@ -97,6 +107,15 @@
           interaction: {
             intersect: false,
             mode: 'index'
+          },
+          animation: {
+            x: { duration: 0 },
+            y: {
+              duration: 1000,
+              delay: function(context) {
+                return context.dataIndex * 30;
+              }
+            }
           }
         }
       }
