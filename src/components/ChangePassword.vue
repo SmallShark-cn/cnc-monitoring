@@ -1,5 +1,5 @@
 <template>
-  <div class="card border-0 mb-4 rounded-big shadow-sm" style="max-width: 50%;">
+  <div class="card border-0 mb-4 rounded-big shadow-sm">
     <div class="card-body">
       <h4 class="mb-4 text-center">修改密码</h4>
       <form @submit.prevent="handleChangePassword">

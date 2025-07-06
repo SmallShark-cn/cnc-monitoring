@@ -27,14 +27,16 @@
             >
           </div>
           <!-- 记住密码复选框 -->
-          <div class="mb-3 form-check">
-            <input 
-              type="checkbox" 
-              class="form-check-input" 
-              id="rememberMe"
-              v-model="rememberMe"
-            >
-            <label class="form-check-label" for="rememberMe">记住密码</label>
+          <div class="mb-3 d-flex justify-content-center">
+            <div class="form-check" style="max-width: 40%;">
+              <input 
+                type="checkbox" 
+                class="form-check-input" 
+                id="rememberMe"
+                v-model="rememberMe"
+              >
+              <label class="form-check-label" for="rememberMe">记住密码</label>
+            </div>
           </div>
           <!-- 登录按钮，宽度100%，圆角 -->
           <button type="submit" class="btn btn-primary w-100 rounded-pill">登录</button>
