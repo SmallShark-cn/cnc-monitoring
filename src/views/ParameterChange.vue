@@ -1,8 +1,9 @@
 <template>
+
     <div class="d-flex min-vh-100 w-100" style="background-color: #196b69;">
       <Sidebar />
       <div class="flex-grow-1 p-4 w-100" style="background-color: rgb(235, 243, 248);">
-        <div class="card border-0 p-4 mx-auto" style="background: linear-gradient(135deg, #a1c4fd, #c2e9fb); max-width: 600px;">
+        <div class="card border-0 p-4 mx-auto bg-white" style="background: rgb(255,255,255); max-width: 600px;">
           <h2 class="text-center mb-4">RWKV Parameter Settings</h2>
           <form @submit.prevent="saveSettings">
             <div class="mb-3">
@@ -42,15 +43,21 @@
         </div>
       </div>
     </div>
+
   </template>
   
   <script>
   import { ref } from 'vue';
   import { useRouter } from 'vue-router';
   import axios from 'axios';
+import Sidebar from '../components/Sidebar.vue';
   
   export default {
     name: 'ParameterChange',
+    components:{
+      Sidebar
+
+    },
     setup() {
       const router = useRouter();
       const settings = ref({

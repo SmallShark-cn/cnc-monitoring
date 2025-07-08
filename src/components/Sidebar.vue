@@ -26,7 +26,6 @@
         menuItems: [
           { icon: 'fas fa-home', label: '仪表板', route: '/dashboard' },
           { icon: 'fas fa-chart-bar', label: '数据监控', route: '/datamonitor' },
-          { icon: 'fas fa-exclamation-triangle', label: '警报历史', route: '/alerts' },
           { icon: 'fas fa-cog', label: '参数调整', route: '/parameterchange' },
           { icon: 'fas fa-clock', label: '维护记录', route: '/maintenance' },
           { icon: 'fas fa-users', label: '用户管理', route: '/usermanagement' }

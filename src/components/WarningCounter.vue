@@ -1,5 +1,5 @@
 <template>
-    <div class="card bg-white mb-4 border-0 rounded-big" style="min-height: 444px; max-width: 417.65px;">
+    <div class="card bg-white mb-4 border-0 rounded-big shadow-sm gradbg" style="min-height: 385px;">
       <div class="card-body">
         <h5 class="text-dark mb-4">告警信息</h5>
         <div>
@@ -29,9 +29,20 @@
   }
   </script>
   
-  <!-- <style>
+  <style>
   .card.rounded-big{
     border-radius: 2rem !important;
   }
+
+  .card.gradbg {
+  background: linear-gradient(180deg, #ffffff, #ffffff);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.card.gradbg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
   </style>
-   -->
+  

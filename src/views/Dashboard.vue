@@ -6,15 +6,41 @@
     <!-- 主内容 -->
     <div class="flex-grow-1 p-4 w-100" style="margin: 0; background-color: rgb(235, 243, 248);">
       <DashboardHeader :tableData="performanceData" @refresh="fetchPerformanceData" />
-      <div class="row">
-        <div class="col-md-8">
-          <PerformanceChart :chartData="performanceData" />
+      
+      <!-- 统计卡片区域 -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <StatsCards ref="statsCards" />
         </div>
-        <div class="col-md-4 ">
+      </div>
+      
+      <!-- 主要内容区域 -->
+      <div class="row mb-4">
+        <div class="col-lg-8">
+          <PerformanceChart />
+        </div>
+        <div class="col-lg-4">
           <WarningCounter />
         </div>
       </div>
-      <StatsCards ref="statsCards" />
+      
+      <!-- 性能趋势区域 -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card bg-white border-0 mb-4 rounded-big shadow-sm gradbg">
+            <div class="card-body">
+              <h5 class="text-dark mb-4">性能趋势</h5>
+              <div style="height: 300px;">
+                <!-- 这里可以放置原来的图表组件 -->
+                <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                  <i class="fas fa-chart-line fa-3x me-3"></i>
+                  <span>性能图表区域</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -104,5 +130,16 @@ html, body, #app {
 
 .text-muted {
   color: #6c757d !important;
+}
+/* 鼠标悬浮效果 */
+.card.gradbg {
+  background: linear-gradient(180deg, #ffffff, #ffffff);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.card.gradbg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
 }
 </style>
