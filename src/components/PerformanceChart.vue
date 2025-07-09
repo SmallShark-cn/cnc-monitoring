@@ -139,6 +139,7 @@ export default {
   data() {
     return {
       vibrationData: [],
+      ws: null,
       deviceStatus: {
         is_online: false,
         data_count: 0,
@@ -151,75 +152,52 @@ export default {
       },
       isMonitoring: false,
       selectedDevice: 80,
-      dataLimit: 20,
-      refreshInterval: null
+      dataLimit: 20
     }
   },
-  async mounted() {
-    await this.refreshData()
-    await this.getDeviceStatus()
-    await this.getStatistics()
-    
-    // 启动自动刷新
-    this.startAutoRefresh()
+  mounted() {
+    this.initWebSocket()
   },
   beforeUnmount() {
-    this.stopAutoRefresh()
+    if (this.ws) this.ws.close()
   },
   methods: {
-    async fetchVibrationData() {
-      try {
-        const response = await fetch(`http://localhost:8000/api/vibration/data/${this.selectedDevice}?limit=${this.dataLimit}`)
-        const result = await response.json()
-        
-        if (result.success) {
-          this.vibrationData = result.data
-        } else {
-          console.error('获取震动数据失败:', result.message)
-        }
-      } catch (error) {
-        console.error('获取震动数据失败:', error)
-      }
-    },
-    
-    async getDeviceStatus() {
-      try {
-        const response = await fetch(`http://localhost:8000/api/vibration/status/${this.selectedDevice}`)
-        const result = await response.json()
-        
-        if (result.success) {
-          this.deviceStatus = result.data
-        } else {
-          this.deviceStatus = {
-            is_online: false,
-            data_count: 0,
-            last_update: null
+    initWebSocket() {
+      if (this.ws) this.ws.close()
+      this.vibrationData = []
+      this.ws = new WebSocket('ws://localhost:8000/ws/vibration/time-domain')
+      this.ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg.data && Array.isArray(msg.data)) {
+            msg.data.forEach(item => {
+              // 可根据selectedDevice过滤设备（如有device_id字段）
+              this.vibrationData.push(item)
+              if (this.vibrationData.length > this.dataLimit) {
+                this.vibrationData.shift()
+              }
+            })
           }
+        } catch (e) {
+          console.error('WebSocket数据解析失败', e)
         }
-      } catch (error) {
-        console.error('获取设备状态失败:', error)
+      }
+      this.ws.onerror = (e) => {
+        console.error('WebSocket连接错误', e)
       }
     },
-    
-    async getStatistics() {
-      try {
-        const response = await fetch(`http://localhost:8000/api/vibration/statistics/${this.selectedDevice}?hours=24`)
-        const result = await response.json()
-        
-        if (result.success) {
-          this.statistics = result.data
-        } else {
-          this.statistics = {
-            avg_temperature: 0,
-            max_vibration: 0,
-            avg_vibration: 0
-          }
-        }
-      } catch (error) {
-        console.error('获取统计数据失败:', error)
-      }
+    onDeviceChange() {
+      // 如有多设备可在此切换ws地址或过滤数据
+      this.vibrationData = []
+      // this.initWebSocket() // 如需切换ws可取消注释
     },
-    
+    refreshData() {
+      this.vibrationData = []
+    },
+    formatTime(timestamp) {
+      const date = new Date(timestamp)
+      return date.toLocaleString('zh-CN')
+    },
     async startMonitoring() {
       try {
         const response = await fetch('http://localhost:8000/api/serial/start', {
@@ -284,34 +262,6 @@ export default {
         alert('发送测试数据失败')
       }
     },
-    
-    async refreshData() {
-      await this.fetchVibrationData()
-      await this.getDeviceStatus()
-      await this.getStatistics()
-    },
-    
-    async onDeviceChange() {
-      await this.refreshData()
-    },
-    
-    formatTime(timestamp) {
-      const date = new Date(timestamp)
-      return date.toLocaleString('zh-CN')
-    },
-    
-    startAutoRefresh() {
-      this.refreshInterval = setInterval(() => {
-        this.refreshData()
-      }, 5000) // 每5秒刷新一次
-    },
-    
-    stopAutoRefresh() {
-      if (this.refreshInterval) {
-        clearInterval(this.refreshInterval)
-        this.refreshInterval = null
-      }
-    }
   }
 }
 </script>

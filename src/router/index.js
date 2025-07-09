@@ -5,6 +5,7 @@ import Login from '../views/UserManagements/Login.vue'
 import Register from '../views/UserManagements/Register.vue'
 import UserManagement from '../views/UserManagement.vue'
 import ParameterChange from '../views/ParameterChange.vue'
+import Maintenance from '../views/Maintenance.vue'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -13,7 +14,8 @@ const routes = [
   { path: '/dashboard', name: 'Dashboard', component: Dashboard },
   { path: '/datamonitor', name: 'DataMonitor', component: DataMonitor},
   { path: '/usermanagement', name: 'UserManagement', component: UserManagement},
-  { path: '/parameterchange', name: 'ParameterChange', component: ParameterChange }
+  { path: '/parameterchange', name: 'ParameterChange', component: ParameterChange },
+  { path: '/maintenance', name: 'Maintenance', component: Maintenance }
 ]
 
 
