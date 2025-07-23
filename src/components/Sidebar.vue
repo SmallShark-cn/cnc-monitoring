@@ -1,7 +1,7 @@
 <template>
     <div class="bg-sidebar" style="width: 280px; min-height: 100vh;">
       <div class="p-4">
-        <h5 class="text-white mb-5">CNC刀具磨损监控</h5>
+        <h5 class="text-white mb-5">CNC刀具状态监测系统</h5>
         <nav>
           <div
             v-for="(item, index) in menuItems"

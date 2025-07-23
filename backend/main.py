@@ -12,6 +12,9 @@ from serial_service import serial_service
 from memory_service import memory_service
 import os
 from Login import router as login_router
+import websockets
+
+REMOTE_WS_BASE = "ws://192.168.1.101:8000"
 
 app = FastAPI(title="CNC监控系统", description="震动传感器数据监控系统")
 
@@ -58,31 +61,33 @@ def get_from_redis(key):
 app.include_router(vibration_router)
 app.include_router(login_router)
 
+# 注释掉性能数据接口中的假数据生成
 @app.get("/api/performance")
 async def get_performance():
     """获取性能数据"""
     performance_data = get_from_redis('performance_history')
-    if not performance_data:
-        # 生成模拟数据
-        performance_data = [random.randint(75, 95) for _ in range(12)]
-        for value in performance_data:
-            save_to_redis('performance_history', value)
+    # if not performance_data:
+    #     # 生成模拟数据
+    #     performance_data = [random.randint(75, 95) for _ in range(12)]
+    #     for value in performance_data:
+    #         save_to_redis('performance_history', value)
     return {"data": performance_data}
 
+# 注释掉统计数据接口中的假数据生成
 @app.get("/api/stats")
 async def get_stats():
     """获取统计数据"""
     stats_data = get_from_redis('stats_history')
-    if not stats_data:
-        # 生成模拟数据
-        stats_data = {
-            "total": random.randint(780000, 790000),
-            "efficiency": random.randint(57000, 59000),
-            "quality": random.randint(91000, 93000)
-        }
-        save_to_redis('stats_history', stats_data)
-    else:
-        stats_data = stats_data[0]  # 取最新数据
+    # if not stats_data:
+    #     # 生成模拟数据
+    #     stats_data = {
+    #         "total": random.randint(780000, 790000),
+    #         "efficiency": random.randint(57000, 59000),
+    #         "quality": random.randint(91000, 93000)
+    #     }
+    #     save_to_redis('stats_history', stats_data)
+    # else:
+    #     stats_data = stats_data[0]  # 取最新数据
     return stats_data
 
 @app.get("/api/vibration/rms-history")
@@ -104,242 +109,135 @@ async def get_tool_wear_history():
     return {"history": tool_wear_data}
 
 # WebSocket端点
-@app.websocket("/ws/vibration/statistics")
-async def ws_vibration_statistics(websocket: WebSocket):
-    await websocket.accept()
-    vibration_clients.add(websocket)
-    try:
-        while True:
-            data = {
-                "timestamp": now_iso(),
-                "rms": round(random.uniform(0, 1), 3),
-                "peak": round(random.uniform(0, 2), 3),
-                "kurtosis": round(random.uniform(2, 6), 3),
-                "skewness": round(random.uniform(-1, 1), 3),
-                "std": round(random.uniform(0, 0.2), 3)
-            }
-            save_to_redis('rms_history', data)
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        vibration_clients.discard(websocket)
-    except Exception as e:
-        print(f"振动WebSocket错误: {e}")
-        vibration_clients.discard(websocket)
-
-@app.websocket("/ws/acoustic/statistics")
-async def ws_acoustic_statistics(websocket: WebSocket):
-    await websocket.accept()
-    acoustic_clients.add(websocket)
-    try:
-        while True:
-            data = {
-                "timestamp": now_iso(),
-                "rms": round(random.uniform(0, 1), 3),
-                "peak": round(random.uniform(0, 2), 3),
-                "kurtosis": round(random.uniform(2, 6), 3),
-                "skewness": round(random.uniform(-1, 1), 3),
-                "std": round(random.uniform(0, 0.2), 3),
-                "spl": round(random.uniform(60, 120), 1)
-            }
-            save_to_redis('acoustic_history', data)
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        acoustic_clients.discard(websocket)
-    except Exception as e:
-        print(f"声学WebSocket错误: {e}")
-        acoustic_clients.discard(websocket)
-
-@app.websocket("/ws/tool-wear")
-async def ws_tool_wear(websocket: WebSocket):
-    await websocket.accept()
-    tool_wear_clients.add(websocket)
-    try:
-        while True:
-            data = {
-                "timestamp": now_iso(),
-                "wear_state": random.choice(['normal']),
-                "confidence": round(random.uniform(0.7, 1.0), 2),
-                "rul": random.randint(10, 100),
-                "contributions": {
-                    "vibration": round(random.uniform(0.3, 0.7), 2),
-                    "acoustic": round(random.uniform(0.3, 0.7), 2)
-                }
-            }
-            save_to_redis('tool_wear_history', data)
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(2)
-    except WebSocketDisconnect:
-        tool_wear_clients.discard(websocket)
-    except Exception as e:
-        print(f"刀具磨损WebSocket错误: {e}")
-        tool_wear_clients.discard(websocket)
-
-# 数据监控WebSocket端点 - 振动传感器
+# 注释掉所有WebSocket端点中的假数据生成和推送
 @app.websocket("/ws/vibration/time-domain")
 async def ws_vibration_time_domain(websocket: WebSocket):
     await websocket.accept()
-    vibration_time_domain_clients.add(websocket)
+    remote_url = f"{REMOTE_WS_BASE}/ws/vibration/time-domain"
     try:
-        while True:
-            data = {
-                "data": [{
-                    "timestamp": now_iso(),
-                    "acceleration": {
-                        "x": round(random.uniform(-2, 2), 3),
-                        "y": round(random.uniform(-2, 2), 3),
-                        "z": round(random.uniform(-2, 2), 3)
-                    },
-                    "velocity": {
-                        "x": round(random.uniform(-0.1, 0.1), 3),
-                        "y": round(random.uniform(-0.1, 0.1), 3),
-                        "z": round(random.uniform(-0.1, 0.1), 3)
-                    },
-                    "displacement": {
-                        "x": round(random.uniform(-0.01, 0.01), 3),
-                        "y": round(random.uniform(-0.01, 0.01), 3),
-                        "z": round(random.uniform(-0.01, 0.01), 3)
-                    },
-                    "temperature": round(random.uniform(20, 22), 1)
-                }]
-            }
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(0.1)  # 10Hz采样率
-    except WebSocketDisconnect:
-        vibration_time_domain_clients.discard(websocket)
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
     except Exception as e:
-        print(f"振动时域WebSocket错误: {e}")
-        vibration_time_domain_clients.discard(websocket)
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
 
 @app.websocket("/ws/vibration/frequency-domain")
 async def ws_vibration_frequency_domain(websocket: WebSocket):
     await websocket.accept()
-    vibration_frequency_domain_clients.add(websocket)
+    remote_url = f"{REMOTE_WS_BASE}/ws/vibration/frequency-domain"
     try:
-        while True:
-            # 生成频率数组 (0-500Hz, 1000个点)
-            frequencies = [i * 0.5 for i in range(1001)]
-            # 生成随机幅值
-            amplitudes = [round(random.uniform(0.001, 0.1), 3) for _ in range(1001)]
-            # 生成功率谱密度
-            psd = [round(amp * amp, 6) for amp in amplitudes]
-            
-            data = {
-                "frequencies": frequencies,
-                "amplitudes": amplitudes,
-                "psd": psd
-            }
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        vibration_frequency_domain_clients.discard(websocket)
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
     except Exception as e:
-        print(f"振动频域WebSocket错误: {e}")
-        vibration_frequency_domain_clients.discard(websocket)
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
 
 @app.websocket("/ws/vibration/time-frequency")
 async def ws_vibration_time_frequency(websocket: WebSocket):
     await websocket.accept()
-    vibration_time_frequency_clients.add(websocket)
+    remote_url = f"{REMOTE_WS_BASE}/ws/vibration/time-frequency"
     try:
-        while True:
-            # 生成时间序列 (最近10秒)
-            time_points = [now_iso() for _ in range(10)]
-            # 生成频率数组 (0-500Hz, 100个点)
-            frequencies = [i * 5 for i in range(101)]
-            # 生成时频谱 (10x101矩阵)
-            spectrogram = [[round(random.uniform(0.001, 0.1), 3) for _ in range(101)] for _ in range(10)]
-            
-            data = {
-                "time": time_points,
-                "frequencies": frequencies,
-                "spectrogram": spectrogram
-            }
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        vibration_time_frequency_clients.discard(websocket)
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
     except Exception as e:
-        print(f"振动时频WebSocket错误: {e}")
-        vibration_time_frequency_clients.discard(websocket)
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
+
+@app.websocket("/ws/vibration/statistics")
+async def ws_vibration_statistics(websocket: WebSocket):
+    await websocket.accept()
+    remote_url = f"{REMOTE_WS_BASE}/ws/vibration/statistics"
+    try:
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
+    except Exception as e:
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
 
 # 数据监控WebSocket端点 - 声学传感器
 @app.websocket("/ws/acoustic/time-domain")
 async def ws_acoustic_time_domain(websocket: WebSocket):
     await websocket.accept()
-    acoustic_time_domain_clients.add(websocket)
+    remote_url = f"{REMOTE_WS_BASE}/ws/acoustic/time-domain"
     try:
-        while True:
-            data = {
-                "data": [{
-                    "timestamp": now_iso(),
-                    "pressure": round(random.uniform(0.1, 2.0), 3),
-                    "intensity": round(random.uniform(0.01, 0.5), 3),
-                    "spl": round(random.uniform(60, 120), 1),
-                    "temperature": round(random.uniform(20, 22), 1)
-                }]
-            }
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(0.1)  # 10Hz采样率
-    except WebSocketDisconnect:
-        acoustic_time_domain_clients.discard(websocket)
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
     except Exception as e:
-        print(f"声学时域WebSocket错误: {e}")
-        acoustic_time_domain_clients.discard(websocket)
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
 
 @app.websocket("/ws/acoustic/frequency-domain")
 async def ws_acoustic_frequency_domain(websocket: WebSocket):
     await websocket.accept()
-    acoustic_frequency_domain_clients.add(websocket)
+    remote_url = f"{REMOTE_WS_BASE}/ws/acoustic/frequency-domain"
     try:
-        while True:
-            # 生成频率数组 (0-20kHz, 1000个点)
-            frequencies = [i * 20 for i in range(1001)]
-            # 生成随机幅值
-            amplitudes = [round(random.uniform(0.001, 0.2), 3) for _ in range(1001)]
-            # 生成功率谱密度
-            psd = [round(amp * amp, 6) for amp in amplitudes]
-            
-            data = {
-                "frequencies": frequencies,
-                "amplitudes": amplitudes,
-                "psd": psd
-            }
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        acoustic_frequency_domain_clients.discard(websocket)
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
     except Exception as e:
-        print(f"声学频域WebSocket错误: {e}")
-        acoustic_frequency_domain_clients.discard(websocket)
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
 
 @app.websocket("/ws/acoustic/time-frequency")
 async def ws_acoustic_time_frequency(websocket: WebSocket):
     await websocket.accept()
-    acoustic_time_frequency_clients.add(websocket)
+    remote_url = f"{REMOTE_WS_BASE}/ws/acoustic/time-frequency"
     try:
-        while True:
-            # 生成时间序列 (最近10秒)
-            time_points = [now_iso() for _ in range(10)]
-            # 生成频率数组 (0-20kHz, 100个点)
-            frequencies = [i * 200 for i in range(101)]
-            # 生成时频谱 (10x101矩阵)
-            spectrogram = [[round(random.uniform(0.001, 0.2), 3) for _ in range(101)] for _ in range(10)]
-            
-            data = {
-                "time": time_points,
-                "frequencies": frequencies,
-                "spectrogram": spectrogram
-            }
-            await websocket.send_text(json.dumps(data))
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        acoustic_time_frequency_clients.discard(websocket)
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
     except Exception as e:
-        print(f"声学时频WebSocket错误: {e}")
-        acoustic_time_frequency_clients.discard(websocket)
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
 
+@app.websocket("/ws/acoustic/statistics")
+async def ws_acoustic_statistics(websocket: WebSocket):
+    await websocket.accept()
+    remote_url = f"{REMOTE_WS_BASE}/ws/acoustic/statistics"
+    try:
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
+    except Exception as e:
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
+
+@app.websocket("/ws/tool-wear")
+async def ws_tool_wear(websocket: WebSocket):
+    await websocket.accept()
+    remote_url = f"{REMOTE_WS_BASE}/ws/tool-wear"
+    try:
+        async with websockets.connect(remote_url) as remote_ws:
+            while True:
+                data = await remote_ws.recv()
+                await websocket.send_text(data)
+    except Exception as e:
+        print(f"转发远程WebSocket数据出错: {e}")
+    finally:
+        await websocket.close()
+
+# 注释掉测试数据接口
 @app.post("/api/serial/start")
 async def start_serial_monitoring(background_tasks: BackgroundTasks, device_id: int = 80):
     """启动串口监控"""
@@ -364,15 +262,17 @@ async def stop_serial_monitoring():
 @app.post("/api/test/send-data")
 async def send_test_data(device_id: int = 80):
     """发送测试数据"""
-    try:
-        success = memory_service.generate_test_data(device_id)
-        if success:
-            return {"success": True, "message": f"测试数据发送成功，设备ID: {device_id}"}
-        else:
-            return {"success": False, "message": "测试数据发送失败"}
-    except Exception as e:
-        return {"success": False, "message": f"发送失败: {str(e)}"}
+    # try:
+    #     success = memory_service.generate_test_data(device_id)
+    #     if success:
+    #         return {"success": True, "message": f"测试数据发送成功，设备ID: {device_id}"}
+    #     else:
+    #         return {"success": False, "message": "测试数据发送失败"}
+    # except Exception as e:
+    #     return {"success": False, "message": f"发送失败: {str(e)}"}
+    return {"success": False, "message": "已禁用假数据功能"}
 
+# 注释掉后台假数据生成线程
 def background_data_generator():
     import time
     while True:
@@ -523,7 +423,7 @@ def background_data_generator():
             "timestamp": now_iso(),
             "wear_state": random.choice(['normal']),
             "confidence": round(random.uniform(0.7, 1.0), 2),
-            "rul": random.randint(10, 100),
+            "rul": random.randint(90, 100),
             "contributions": {
                 "vibration": round(random.uniform(0.3, 0.7), 2),
                 "acoustic": round(random.uniform(0.3, 0.7), 2)
@@ -613,6 +513,7 @@ async def get_rwkv_settings():
     except Exception as e:
         return {"message": f"读取失败: {e}"}, 500
 
+# 注释掉后台假数据生成线程
 @app.on_event("startup")
 async def startup_event():
     print("CNC监控系统启动中...")
@@ -628,21 +529,19 @@ async def startup_event():
     if not os.path.exists('rwkv_settings.json'):
         with open('rwkv_settings.json', 'w', encoding='utf-8') as f:
             json.dump(default_rwkv, f, ensure_ascii=False, indent=2)
-    # 启动后台数据生成线程
-    threading.Thread(target=background_data_generator, daemon=True).start()
+    # threading.Thread(target=background_data_generator, daemon=True).start()
     # 初始化Redis数据
-    if not r.exists('performance_history'):
-        performance_data = [random.randint(75, 95) for _ in range(12)]
-        for value in performance_data:
-            save_to_redis('performance_history', value)
-    
-    if not r.exists('stats_history'):
-        stats_data = {
-            "total": random.randint(780000, 790000),
-            "efficiency": random.randint(57000, 59000),
-            "quality": random.randint(91000, 93000)
-        }
-        save_to_redis('stats_history', stats_data)
+    # if not r.exists('performance_history'):
+    #     performance_data = [random.randint(75, 95) for _ in range(12)]
+    #     for value in performance_data:
+    #         save_to_redis('performance_history', value)
+    # if not r.exists('stats_history'):
+    #     stats_data = {
+    #         "total": random.randint(780000, 790000),
+    #         "efficiency": random.randint(57000, 59000),
+    #         "quality": random.randint(91000, 93000)
+    #     }
+    #     save_to_redis('stats_history', stats_data)
 
 @app.on_event("shutdown")
 async def shutdown_event():

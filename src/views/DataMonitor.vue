@@ -316,10 +316,18 @@ export default {
       // 融合分析
       fusionToolWear: {},
       fusionCorrelation: {},
+      // WebSocket对象
+      wsVibrationTimeDomain: null,
+      wsVibrationFrequencyDomain: null,
+      wsVibrationTimeFrequency: null,
+      wsVibrationStatistics: null,
+      wsAcousticTimeDomain: null,
+      wsAcousticFrequencyDomain: null,
+      wsAcousticTimeFrequency: null,
+      wsAcousticStatistics: null,
       // 拉取状态
       vibrationDataOk: true,
-      acousticDataOk: true,
-      timer: null
+      acousticDataOk: true
     }
   },
   computed: {
@@ -341,58 +349,69 @@ export default {
     }
   },
   mounted() {
-    this.fetchAllData()
-    this.timer = setInterval(this.fetchAllData, 1000)
+    this.initAllWebSockets()
   },
   beforeUnmount() {
-    if (this.timer) clearInterval(this.timer)
+    this.closeAllWebSockets()
   },
   methods: {
-    async fetchAllData() {
-      try {
-        // 并行拉取振动数据
-        const [td, fd, tf, stat] = await Promise.all([
-          fetch('http://localhost:8000/api/vibration/time-domain').then(r => r.json()),
-          fetch('http://localhost:8000/api/vibration/frequency-domain').then(r => r.json()),
-          fetch('http://localhost:8000/api/vibration/time-frequency').then(r => r.json()),
-          fetch('http://localhost:8000/api/vibration/statistics').then(r => r.json())
-        ])
-        this.vibrationTimeDomain = td.data || {}
-        this.vibrationFrequencyDomain = fd || {}
-        this.vibrationTimeFrequency = tf || {}
-        this.vibrationStatistics = stat || {}
-        this.vibrationDataOk = true
-      } catch (e) {
-        this.vibrationDataOk = false
+    initAllWebSockets() {
+      // 振动相关
+      this.wsVibrationTimeDomain = new WebSocket('ws://localhost:8000/ws/vibration/time-domain')
+      this.wsVibrationTimeDomain.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg.data && Array.isArray(msg.data)) {
+            this.vibrationTimeDomain = msg.data[0] || {}
+          }
+        } catch (err) { this.vibrationDataOk = false }
       }
-      try {
-        // 并行拉取声学数据
-        const [td, fd, tf, stat] = await Promise.all([
-          fetch('http://localhost:8000/api/acoustic/time-domain').then(r => r.json()),
-          fetch('http://localhost:8000/api/acoustic/frequency-domain').then(r => r.json()),
-          fetch('http://localhost:8000/api/acoustic/time-frequency').then(r => r.json()),
-          fetch('http://localhost:8000/api/acoustic/statistics').then(r => r.json())
-        ])
-        this.acousticTimeDomain = td.data || {}
-        this.acousticFrequencyDomain = fd || {}
-        this.acousticTimeFrequency = tf || {}
-        this.acousticStatistics = stat || {}
-        this.acousticDataOk = true
-      } catch (e) {
-        this.acousticDataOk = false
+      this.wsVibrationFrequencyDomain = new WebSocket('ws://localhost:8000/ws/vibration/frequency-domain')
+      this.wsVibrationFrequencyDomain.onmessage = (e) => {
+        try { this.vibrationFrequencyDomain = JSON.parse(e.data) } catch (err) { this.vibrationDataOk = false }
       }
-      try {
-        // 融合分析数据
-        const [toolWear, correlation] = await Promise.all([
-          fetch('http://localhost:8000/api/fusion/tool-wear').then(r => r.json()),
-          fetch('http://localhost:8000/api/fusion/correlation').then(r => r.json())
-        ])
-        this.fusionToolWear = toolWear || {}
-        this.fusionCorrelation = correlation || {}
-      } catch (e) {
-        this.fusionToolWear = {}
-        this.fusionCorrelation = {}
+      this.wsVibrationTimeFrequency = new WebSocket('ws://localhost:8000/ws/vibration/time-frequency')
+      this.wsVibrationTimeFrequency.onmessage = (e) => {
+        try { this.vibrationTimeFrequency = JSON.parse(e.data) } catch (err) { this.vibrationDataOk = false }
       }
+      this.wsVibrationStatistics = new WebSocket('ws://localhost:8000/ws/vibration/statistics')
+      this.wsVibrationStatistics.onmessage = (e) => {
+        try { this.vibrationStatistics = JSON.parse(e.data) } catch (err) { this.vibrationDataOk = false }
+      }
+      // 声学相关
+      this.wsAcousticTimeDomain = new WebSocket('ws://localhost:8000/ws/acoustic/time-domain')
+      this.wsAcousticTimeDomain.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg.data && Array.isArray(msg.data)) {
+            this.acousticTimeDomain = msg.data[0] || {}
+          }
+        } catch (err) { this.acousticDataOk = false }
+      }
+      this.wsAcousticFrequencyDomain = new WebSocket('ws://localhost:8000/ws/acoustic/frequency-domain')
+      this.wsAcousticFrequencyDomain.onmessage = (e) => {
+        try { this.acousticFrequencyDomain = JSON.parse(e.data) } catch (err) { this.acousticDataOk = false }
+      }
+      this.wsAcousticTimeFrequency = new WebSocket('ws://localhost:8000/ws/acoustic/time-frequency')
+      this.wsAcousticTimeFrequency.onmessage = (e) => {
+        try { this.acousticTimeFrequency = JSON.parse(e.data) } catch (err) { this.acousticDataOk = false }
+      }
+      this.wsAcousticStatistics = new WebSocket('ws://localhost:8000/ws/acoustic/statistics')
+      this.wsAcousticStatistics.onmessage = (e) => {
+        try { this.acousticStatistics = JSON.parse(e.data) } catch (err) { this.acousticDataOk = false }
+      }
+    },
+    closeAllWebSockets() {
+      [
+        this.wsVibrationTimeDomain,
+        this.wsVibrationFrequencyDomain,
+        this.wsVibrationTimeFrequency,
+        this.wsVibrationStatistics,
+        this.wsAcousticTimeDomain,
+        this.wsAcousticFrequencyDomain,
+        this.wsAcousticTimeFrequency,
+        this.wsAcousticStatistics
+      ].forEach(ws => { if (ws) ws.close() })
     }
   }
 }

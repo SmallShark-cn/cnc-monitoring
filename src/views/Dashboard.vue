@@ -71,65 +71,70 @@ export default {
       vibrationHistory: [],
       toolWearHistory: [],
       performanceData: [],
-      dataTimer: null
+      // WebSocket对象
+      wsVibrationStatistics: null,
+      wsAcousticStatistics: null,
+      wsToolWear: null,
+      wsPerformance: null
     }
   },
   mounted() {
-    this.fetchAllData()
-    this.dataTimer = setInterval(this.fetchAllData, 1000)
+    this.initAllWebSockets()
   },
   beforeUnmount() {
-    if (this.dataTimer) clearInterval(this.dataTimer)
+    this.closeAllWebSockets()
   },
   methods: {
-    async fetchAllData() {
-      try {
-        // 并行获取所有数据
-        const [rmsRes, acousticRes, toolWearRes, performanceRes] = await Promise.all([
-          fetch('http://localhost:8000/api/vibration/rms-history'),
-          fetch('http://localhost:8000/api/acoustic/history'),
-          fetch('http://localhost:8000/api/tool-wear/history'),
-          fetch('http://localhost:8000/api/performance')
-        ])
-
-        const [rmsData, acousticData, toolWearData, performanceData] = await Promise.all([
-          rmsRes.json(),
-          acousticRes.json(),
-          toolWearRes.json(),
-          performanceRes.json()
-        ])
-
-        console.log('Dashboard - rmsData:', rmsData) // 调试日志
-        this.rmsHistory = rmsData.history || []
-        console.log('Dashboard - rmsHistory set to:', this.rmsHistory) // 调试日志
-        
-        this.acousticHistory = acousticData.history || []
-        this.toolWearHistory = toolWearData.history || []
-        this.performanceData = performanceData.data || []
-
-        // 从振动历史数据中提取振动统计数据
-        if (this.acousticHistory.length > 0) {
-          this.vibrationHistory = this.acousticHistory.map(item => ({
-            timestamp: item.timestamp,
-            rms: item.rms,
-            peak: item.peak,
-            kurtosis: item.kurtosis,
-            skewness: item.skewness,
-            std: item.std
-          }))
-        }
-      } catch (e) {
-        console.error('拉取数据失败', e)
+    initAllWebSockets() {
+      // 振动统计
+      this.wsVibrationStatistics = new WebSocket('ws://localhost:8000/ws/vibration/statistics')
+      this.wsVibrationStatistics.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg && Object.keys(msg).length > 0) {
+            this.rmsHistory.unshift(msg)
+            if (this.rmsHistory.length > 30) this.rmsHistory.pop()
+          }
+        } catch (err) { }
       }
+      // 声学统计
+      this.wsAcousticStatistics = new WebSocket('ws://localhost:8000/ws/acoustic/statistics')
+      this.wsAcousticStatistics.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg && Object.keys(msg).length > 0) {
+            this.acousticHistory.unshift(msg)
+            if (this.acousticHistory.length > 30) this.acousticHistory.pop()
+          }
+        } catch (err) { }
+      }
+      // 刀具磨损
+      this.wsToolWear = new WebSocket('ws://localhost:8000/ws/tool-wear')
+      this.wsToolWear.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg && Object.keys(msg).length > 0) {
+            this.toolWearHistory.unshift(msg)
+            if (this.toolWearHistory.length > 30) this.toolWearHistory.pop()
+          }
+        } catch (err) { }
+      }
+      // 性能数据（如有WebSocket端点，可加，否则保留原有API）
+      // this.wsPerformance = new WebSocket('ws://localhost:8000/ws/performance')
+      // this.wsPerformance.onmessage = (e) => {
+      //   try {
+      //     const msg = JSON.parse(e.data)
+      //     this.performanceData = msg.data || []
+      //   } catch (err) { }
+      // }
     },
-    async fetchPerformanceData() {
-      try {
-        const res = await fetch('http://localhost:8000/api/performance')
-        const data = await res.json()
-        this.performanceData = data.data
-      } catch (e) {
-        console.error('拉取性能数据失败', e)
-      }
+    closeAllWebSockets() {
+      [
+        this.wsVibrationStatistics,
+        this.wsAcousticStatistics,
+        this.wsToolWear,
+        this.wsPerformance
+      ].forEach(ws => { if (ws) ws.close() })
     }
   }
 }
