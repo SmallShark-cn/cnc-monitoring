@@ -36,7 +36,6 @@ export default {
   computed: {
     chartData() {
       console.log('VibrationTrendChart - rmsHistory:', this.rmsHistory) // 调试日志
-      
       // 如果没有数据，返回默认数据
       if (!this.rmsHistory || this.rmsHistory.length === 0) {
         console.log('No data, showing default chart')
@@ -56,21 +55,18 @@ export default {
           ]
         }
       }
-
       // 限制最多显示30个数据点
       const maxPoints = 30
       const data = this.rmsHistory.slice(0, maxPoints)
       console.log('Chart data:', data) // 调试日志
-      
       // 生成标签，从右到左编号（最新的数据在右边）
       const labels = Array.from({ length: data.length }, (_, idx) => data.length - idx)
-      
       return {
         labels: labels,
         datasets: [
           {
             label: 'RMS',
-            data: data,
+            data: data.map(item => item.rms), // 只取rms字段
             borderColor: '#00FF00',
             backgroundColor: 'rgba(0,255,0,0.1)',
             fill: true,

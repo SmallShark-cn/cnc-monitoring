@@ -94,6 +94,7 @@ export default {
           if (msg && Object.keys(msg).length > 0) {
             this.rmsHistory.unshift(msg)
             if (this.rmsHistory.length > 30) this.rmsHistory.pop()
+            this.vibrationHistory = this.rmsHistory // 保证StatsCards能拿到数据
           }
         } catch (err) { }
       }
