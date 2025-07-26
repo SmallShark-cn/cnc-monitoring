@@ -1,0 +1,8 @@
+{
+  "modelSize": "430M",
+  "tokenShift": 0.5,
+  "layers": 2,
+  "contextLength": 1024,
+  "samplingRate": 51200,
+  "alertThreshold": 7
+}

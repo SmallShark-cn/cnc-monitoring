@@ -7,7 +7,7 @@
     <div class="d-flex align-items-center gap-3">
       <div class="text-center">
         <div class="status-indicator" :class="{ 'connected': isConnected }"></div>
-        <small class="text-muted">{{ isConnected ? '已连接' : '未连接' }}</small>
+        <small class="text-muted">{{ isConnected ? '已连接' : '已连接' }}</small>
       </div>
       <div class="text-end">
         <div class="text-muted small">最后更新</div>
